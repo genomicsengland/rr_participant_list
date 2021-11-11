@@ -1,3 +1,4 @@
+-- query to generate the participant list and populate a table with it
 drop table if exists rr_participant_list.participant_list;
 create table rr_participant_list.participant_list as 
 with all_tags as (
@@ -194,11 +195,15 @@ _100k_dob as (
         dg.stale = false and dg.blacklisted = false
 ),
 _100k_over_16 as (
-    /* work out who is 16 or over based on their best guess of dob */
+    /* work out who will be 16 or over a month after release based on their
+    best guess of dob */
     select participant_id
-    from _100k_dob 
+    from _100k_dob
+    join rr_participant_list.release r on true
     where (rank = 1 or (rank is null and rn = 1)) and
-        extract(year from age(date_of_birth)) >= 16
+        extract(year from age(
+            r.release_date + interval '1 month', date_of_birth
+        )) >= 16
 ),
 _100k_ineligible as (
     /* get study participant uid for all 100k participants who have an
